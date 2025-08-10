@@ -1,5 +1,5 @@
 pyrofork
-tgcyrpto
+tgcrypto
 telethon 
 cyrptg
 fastapi
