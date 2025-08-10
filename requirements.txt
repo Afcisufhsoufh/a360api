@@ -15,4 +15,3 @@ aiohttp
 pycountry 
 pydantic
 python-dateutil
-urllib
