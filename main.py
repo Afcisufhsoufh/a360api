@@ -109,4 +109,10 @@ if __name__ == "__main__":
     host = "0.0.0.0"
     port = int(os.getenv("PORT", 8000))
     LOGGER.info(f"Starting server at {get_server_address()}")
-    uvicorn.run(app, host=host, port=port)
+    # Pass the app as an import string so workers/reload work properly
+    uvicorn.run(
+        "main:app",  # replace 'main' with your filename (without .py) if different
+        host=host,
+        port=port,
+        reload=os.getenv("RELOAD", "false").lower() == "true"
+    )
