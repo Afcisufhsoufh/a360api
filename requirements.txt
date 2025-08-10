@@ -1,7 +1,7 @@
 pyrofork
 tgcrypto
 telethon 
-cyrptg
+cryptg
 fastapi
 uvicorn
 asyncio
