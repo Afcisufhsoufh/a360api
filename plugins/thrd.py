@@ -1,102 +1,149 @@
-# Copyright @ISmartCoder
+# Copyright @abirxdhack
 # Updates Channel: https://t.me/TheSmartDev
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 import requests
-from datetime import datetime
-from utils import LOGGER
+from bs4 import BeautifulSoup
+import time
+import re
+from collections import OrderedDict
 
 router = APIRouter(prefix="/thrd")
 
-@router.get("/dl")
-async def download_video(url: str = ""):
+def get_threads_info(url: str):
+    api_url = "https://api.threadsphotodownloader.com/v2/media"
+    params = {"url": url}
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "*/*",
+        "Referer": "https://sssthreads.pro/",
+        "Origin": "https://sssthreads.pro",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+    try:
+        resp = requests.get(api_url, params=params, headers=headers, timeout=30)
+        enc = resp.headers.get("content-encoding", "").lower()
+        data = resp.content
+        if enc == "zstd":
+            import zstandard
+            dctx = zstandard.ZstdDecompressor()
+            data = dctx.decompress(data, max_output_size=20_000_000)
+        elif enc == "gzip":
+            import gzip
+            data = gzip.decompress(data)
+        elif enc == "br":
+            import brotli
+            data = brotli.decompress(data)
+        elif enc == "deflate":
+            import zlib
+            data = zlib.decompress(data)
+        else:
+            data = resp.text.encode()
+        import json
+        return json.loads(data.decode("utf-8", "ignore"))
+    except Exception as e:
+        return {"error": str(e)}
+
+def get_twitter_info(url: str):
+    api_url = f"https://twitsave.com/info?url={url}"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "*/*",
+        "Referer": "https://twitsave.com/",
+        "Origin": "https://twitsave.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+    try:
+        resp = requests.get(api_url, headers=headers, timeout=30)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        result = {}
+
+        video_section = soup.find_all("div", class_="origin-top-right")
+        video_urls = []
+        if video_section:
+            video_links = video_section[0].find_all("a")
+            video_urls = [a.get("href") for a in video_links if a.get("href")]
+        result["video_urls"] = video_urls
+
+        name_section = soup.find_all("div", class_="leading-tight")
+        title = None
+        if name_section:
+            name_ps = name_section[0].find_all("p", class_="m-2")
+            if name_ps:
+                raw_name = name_ps[0].text
+                title = re.sub(r"[^a-zA-Z0-9]+", " ", raw_name).strip()
+        result["title"] = title
+
+        thumb_section = soup.find_all("img", class_="rounded-lg")
+        thumbnail_urls = [img.get("src") for img in thumb_section if img.get("src")]
+        result["thumbnail_urls"] = thumbnail_urls
+
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@router.get("/thd")
+async def threads_dl(url: str = Query(..., description="Threads url")):
+    start_time = time.time()
     if not url:
         return JSONResponse(
             status_code=400,
             content={
-                "success": False,
-                "error": "Missing 'url' parameter",
-                "api_owner": "@ISmartCoder",
-                "api_updates": "t.me/TheSmartDev",
-                "timestamp": datetime.now().isoformat(),
-                "message": "Please provide a valid Threads URL"
+                'error': 'Please Provide A Valid URL For Threads ❌',
+                'api_owner': '@abirxdhack',
+                'api_updates': 't.me/TheSmartDev'
             }
         )
-    
-    api_url = "https://api.threadsphotodownloader.com/v2/media"
-    params = {"url": url}
-    
-    try:
-        response = requests.get(api_url, params=params, timeout=30)
-        if response.status_code == 200:
-            data = response.json()
-            videos = data.get("video_urls", [])
-            if videos:
-                return JSONResponse(
-                    content={
-                        "success": True,
-                        "video_url": videos[0]["download_url"],
-                        "video_quality": videos[0].get("quality", "HD"),
-                        "file_size": videos[0].get("file_size", "Unknown"),
-                        "api_owner": "@ISmartCoder",
-                        "api_updates": "t.me/TheSmartDev",
-                        "timestamp": datetime.now().isoformat(),
-                        "message": "Video downloaded successfully",
-                        "total_videos_found": len(videos),
-                        "server_response_time": f"{response.elapsed.total_seconds():.2f}s"
-                    }
-                )
-            else:
-                return JSONResponse(
-                    status_code=404,
-                    content={
-                        "success": False,
-                        "error": "No video found in post",
-                        "api_owner": "@ISmartCoder",
-                        "api_updates": "t.me/TheSmartDev",
-                        "timestamp": datetime.now().isoformat(),
-                        "message": "The provided URL doesn't contain any downloadable videos"
-                    }
-                )
-        else:
-            LOGGER.error(f"External API returned status {response.status_code} for URL {url}")
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "success": False,
-                    "error": "External API Error",
-                    "status_code": response.status_code,
-                    "api_owner": "@ISmartCoder",
-                    "api_updates": "t.me/TheSmartDev",
-                    "timestamp": datetime.now().isoformat(),
-                    "message": "Failed to fetch video from external service"
-                }
-            )
-    
-    except requests.exceptions.Timeout:
-        LOGGER.error(f"Request timeout for URL {url}")
+    data = get_threads_info(url)
+    if not data or ("error" in data and data["error"]):
         return JSONResponse(
-            status_code=408,
+            status_code=404,
             content={
-                "success": False,
-                "error": "Request timeout",
-                "api_owner": "@ISmartCoder",
-                "api_updates": "t.me/TheSmartDev",
-                "timestamp": datetime.now().isoformat(),
-                "message": "The request took too long to process"
+                'error': f'Error fetching Threads info: {data.get("error") if isinstance(data, dict) else "Unknown"}',
+                'api_owner': '@abirxdhack',
+                'api_updates': 't.me/TheSmartDev'
             }
         )
-    
-    except Exception as e:
-        LOGGER.error(f"Unexpected error for URL {url}: {str(e)}")
+    time_taken = f"{time.time() - start_time:.2f} seconds"
+    response = OrderedDict()
+    response["input_url"] = url
+    response["time_taken"] = time_taken
+    response["api_owner"] = "@abirxdhack"
+    response["api_updates"] = "t.me/TheSmartDev"
+    response["api"] = "abirxdhack Threads Scraper"
+    response["results"] = data
+    return JSONResponse(content=dict(response))
+
+@router.get("/twit")
+async def twitter_dl(url: str = Query(..., description="Twitter/X url")):
+    start_time = time.time()
+    if not url:
         return JSONResponse(
-            status_code=500,
+            status_code=400,
             content={
-                "success": False,
-                "error": str(e),
-                "api_owner": "@ISmartCoder",
-                "api_updates": "t.me/TheSmartDev",
-                "timestamp": datetime.now().isoformat(),
-                "message": "An unexpected error occurred"
+                'error': 'Please Provide A Valid URL For Twitter ❌',
+                'api_owner': '@abirxdhack',
+                'api_updates': 't.me/TheSmartDev'
             }
         )
+    data = get_twitter_info(url)
+    if not data or ("error" in data and data["error"]):
+        return JSONResponse(
+            status_code=404,
+            content={
+                'error': f'Error fetching Twitter info: {data.get("error") if isinstance(data, dict) else "Unknown"}',
+                'api_owner': '@abirxdhack',
+                'api_updates': 't.me/TheSmartDev'
+            }
+        )
+    time_taken = f"{time.time() - start_time:.2f} seconds"
+    response = OrderedDict()
+    response["input_url"] = url
+    response["time_taken"] = time_taken
+    response["api_owner"] = "@abirxdhack"
+    response["api_updates"] = "t.me/TheSmartDev"
+    response["api"] = "abirxdhack Twitter Scraper"
+    response["results"] = data
+    return JSONResponse(content=dict(response))
