@@ -1,5 +1,3 @@
-# Copyright @abirxdhack
-# Updates Channel: https://t.me/TheSmartDev
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 import requests
@@ -28,7 +26,7 @@ def get_threads_info(url: str):
         if enc == "zstd":
             import zstandard
             dctx = zstandard.ZstdDecompressor()
-            data = dctx.decompress(data, max_output_size=20_000_000)
+            data = dctx.decompress(data, max_output_size=20000000)
         elif enc == "gzip":
             import gzip
             data = gzip.decompress(data)
@@ -59,14 +57,12 @@ def get_twitter_info(url: str):
         resp = requests.get(api_url, headers=headers, timeout=30)
         soup = BeautifulSoup(resp.text, "html.parser")
         result = {}
-
         video_section = soup.find_all("div", class_="origin-top-right")
         video_urls = []
         if video_section:
             video_links = video_section[0].find_all("a")
             video_urls = [a.get("href") for a in video_links if a.get("href")]
         result["video_urls"] = video_urls
-
         name_section = soup.find_all("div", class_="leading-tight")
         title = None
         if name_section:
@@ -75,11 +71,9 @@ def get_twitter_info(url: str):
                 raw_name = name_ps[0].text
                 title = re.sub(r"[^a-zA-Z0-9]+", " ", raw_name).strip()
         result["title"] = title
-
         thumb_section = soup.find_all("img", class_="rounded-lg")
         thumbnail_urls = [img.get("src") for img in thumb_section if img.get("src")]
         result["thumbnail_urls"] = thumbnail_urls
-
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -88,24 +82,10 @@ def get_twitter_info(url: str):
 async def threads_dl(url: str = Query(..., description="Threads url")):
     start_time = time.time()
     if not url:
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': 'Please Provide A Valid URL For Threads ❌',
-                'api_owner': '@abirxdhack',
-                'api_updates': 't.me/TheSmartDev'
-            }
-        )
+        return JSONResponse(status_code=400, content={'error': 'Please Provide A Valid URL For Threads ❌', 'api_owner': '@abirxdhack', 'api_updates': 't.me/TheSmartDev'})
     data = get_threads_info(url)
     if not data or ("error" in data and data["error"]):
-        return JSONResponse(
-            status_code=404,
-            content={
-                'error': f'Error fetching Threads info: {data.get("error") if isinstance(data, dict) else "Unknown"}',
-                'api_owner': '@abirxdhack',
-                'api_updates': 't.me/TheSmartDev'
-            }
-        )
+        return JSONResponse(status_code=404, content={'error': f'Error fetching Threads info: {data.get("error") if isinstance(data, dict) else "Unknown"}', 'api_owner': '@abirxdhack', 'api_updates': 't.me/TheSmartDev'})
     time_taken = f"{time.time() - start_time:.2f} seconds"
     response = OrderedDict()
     response["input_url"] = url
@@ -120,24 +100,10 @@ async def threads_dl(url: str = Query(..., description="Threads url")):
 async def twitter_dl(url: str = Query(..., description="Twitter/X url")):
     start_time = time.time()
     if not url:
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': 'Please Provide A Valid URL For Twitter ❌',
-                'api_owner': '@abirxdhack',
-                'api_updates': 't.me/TheSmartDev'
-            }
-        )
+        return JSONResponse(status_code=400, content={'error': 'Please Provide A Valid URL For Twitter ❌', 'api_owner': '@abirxdhack', 'api_updates': 't.me/TheSmartDev'})
     data = get_twitter_info(url)
     if not data or ("error" in data and data["error"]):
-        return JSONResponse(
-            status_code=404,
-            content={
-                'error': f'Error fetching Twitter info: {data.get("error") if isinstance(data, dict) else "Unknown"}',
-                'api_owner': '@abirxdhack',
-                'api_updates': 't.me/TheSmartDev'
-            }
-        )
+        return JSONResponse(status_code=404, content={'error': f'Error fetching Twitter info: {data.get("error") if isinstance(data, dict) else "Unknown"}', 'api_owner': '@abirxdhack', 'api_updates': 't.me/TheSmartDev'})
     time_taken = f"{time.time() - start_time:.2f} seconds"
     response = OrderedDict()
     response["input_url"] = url
