@@ -1790,37 +1790,76 @@ curl -X POST "https://a360api-c8fbf2fa3cda.herokuapp.com/ph/enh" \
           <i class="fas fa-play mr-2"></i> Try It
         </a>
       </div>
-      <!-- /thrd/dl Endpoint -->
-      <div class="endpoint-card">
-        <h3 class="text-2xl font-bold stylish-text mb-4">/thrd/dl</h3>
-        <p class="text-base stylish-text mb-2"><strong>Description:</strong> Fetches download links for Threads videos using the Threads Photo Downloader API.</p>
-        <p class="text-base stylish-text mb-2"><strong>Method:</strong> GET</p>
-        <p class="text-base stylish-text mb-2"><strong>Endpoint:</strong> <code>/thrd/dl?url={threadsUrl}</code></p>
-        <p class="text-base stylish-text mb-2"><strong>Parameters:</strong></p>
-        <ul class="list-disc list-inside ml-4 text-base stylish-text mb-2">
-          <li><code>url</code> (required, string): Threads video URL.</li>
-        </ul>
-        <p class="text-base stylish-text mb-2"><strong>Example Request:</strong></p>
-        <pre class="code-block"><code>curl -X GET "https://a360api-c8fbf2fa3cda.herokuapp.com/thrd/dl?url=https://www.threads.net/post/123456789"</code></pre>
-        <p class="text-base stylish-text mb-2"><strong>Example Response:</strong></p>
-        <pre class="code-block"><code>
+<!-- /thrd/thd Endpoint -->
+<div class="endpoint-card">
+  <h3 class="text-2xl font-bold stylish-text mb-4">/thrd/thd</h3>
+  <p class="text-base stylish-text mb-2"><strong>Description:</strong> Fetches download and metadata information for Threads posts using an external Threads Photo Downloader API. Returns media links and post details.</p>
+  <p class="text-base stylish-text mb-2"><strong>Method:</strong> GET</p>
+  <p class="text-base stylish-text mb-2"><strong>Endpoint:</strong> <code>/thrd/thd?url={threadsUrl}</code></p>
+  <p class="text-base stylish-text mb-2"><strong>Parameters:</strong></p>
+  <ul class="list-disc list-inside ml-4 text-base stylish-text mb-2">
+    <li><code>url</code> (required, string): Threads post URL.</li>
+  </ul>
+  <p class="text-base stylish-text mb-2"><strong>Example Request:</strong></p>
+  <pre class="code-block"><code>curl -X GET "https://a360api-c8fbf2fa3cda.herokuapp.com/thrd/thd?url=https://www.threads.net/post/123456789"</code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Example Response:</strong></p>
+  <pre class="code-block"><code>
 {
-  "success": true,
-  "video_url": "https://cdn.example.com/video.mp4",
-  "video_quality": "HD",
-  "file_size": "10MB",
-  "api_owner": "@ISmartCoder",
+  "input_url": "https://www.threads.net/post/123456789",
+  "time_taken": "0.17 seconds",
+  "api_owner": "@abirxdhack",
   "api_updates": "t.me/TheSmartDev",
-  "timestamp": "2025-08-09T09:45:00.123456+06:00",
-  "message": "Video downloaded successfully",
-  "total_videos_found": 1,
-  "server_response_time": "0.12s"
+  "api": "abirxdhack Threads Scraper",
+  "results": {
+    "media_url": "https://cdn.example.com/thread-video.mp4",
+    "type": "video",
+    "username": "exampleuser",
+    "caption": "Check out this post!",
+    "cover": "https://cdn.example.com/thread-thumb.jpg"
+  }
 }
-        </code></pre>
-        <a href="https://a360api-c8fbf2fa3cda.herokuapp.com/thrd/dl?url=https://www.threads.net/post/123456789" target="_blank" class="inline-flex items-center btn-glow font-bold py-2 px-4 rounded-xl mt-4 stylish-text">
-          <i class="fas fa-play mr-2"></i> Try It
-        </a>
-      </div>
+  </code></pre>
+  <a href="https://a360api-c8fbf2fa3cda.herokuapp.com/thrd/thd?url=https://www.threads.net/post/123456789" target="_blank" class="inline-flex items-center btn-glow font-bold py-2 px-4 rounded-xl mt-4 stylish-text">
+    <i class="fas fa-play mr-2"></i> Try It
+  </a>
+</div>
+
+<!-- /thrd/twit Endpoint -->
+<div class="endpoint-card">
+  <h3 class="text-2xl font-bold stylish-text mb-4">/thrd/twit</h3>
+  <p class="text-base stylish-text mb-2"><strong>Description:</strong> Fetches download links and metadata for Twitter/X videos and images using TwitSave scraping. Returns media URLs, post title, and thumbnail.</p>
+  <p class="text-base stylish-text mb-2"><strong>Method:</strong> GET</p>
+  <p class="text-base stylish-text mb-2"><strong>Endpoint:</strong> <code>/thrd/twit?url={twitterUrl}</code></p>
+  <p class="text-base stylish-text mb-2"><strong>Parameters:</strong></p>
+  <ul class="list-disc list-inside ml-4 text-base stylish-text mb-2">
+    <li><code>url</code> (required, string): Twitter/X post URL.</li>
+  </ul>
+  <p class="text-base stylish-text mb-2"><strong>Example Request:</strong></p>
+  <pre class="code-block"><code>curl -X GET "https://a360api-c8fbf2fa3cda.herokuapp.com/thrd/twit?url=https://twitter.com/i/status/123456789"</code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Example Response:</strong></p>
+  <pre class="code-block"><code>
+{
+  "input_url": "https://twitter.com/i/status/123456789",
+  "time_taken": "0.13 seconds",
+  "api_owner": "@abirxdhack",
+  "api_updates": "t.me/TheSmartDev",
+  "api": "abirxdhack Twitter Scraper",
+  "results": {
+    "video_urls": [
+      "https://cdn.example.com/twitter-video-720p.mp4",
+      "https://cdn.example.com/twitter-video-480p.mp4"
+    ],
+    "title": "Amazing Video Post",
+    "thumbnail_urls": [
+      "https://cdn.example.com/twitter-thumb.jpg"
+    ]
+  }
+}
+  </code></pre>
+  <a href="https://a360api-c8fbf2fa3cda.herokuapp.com/thrd/twit?url=https://twitter.com/i/status/123456789" target="_blank" class="inline-flex items-center btn-glow font-bold py-2 px-4 rounded-xl mt-4 stylish-text">
+    <i class="fas fa-play mr-2"></i> Try It
+  </a>
+</div>
       <!-- /pnt/dl Endpoint -->
       <div class="endpoint-card">
         <h3 class="text-2xl font-bold stylish-text mb-4">/pnt/dl</h3>
