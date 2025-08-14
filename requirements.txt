@@ -6,6 +6,7 @@ fastapi
 uvicorn
 asyncio
 pytz
+zstandard
 smartfaker
 smartbindb
 googletrans==4.0.0-rc1
