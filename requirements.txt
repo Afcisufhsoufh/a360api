@@ -4,6 +4,7 @@ telethon
 cryptg
 fastapi
 uvicorn
+brotli
 asyncio
 pytz
 zstandard
