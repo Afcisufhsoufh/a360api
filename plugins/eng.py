@@ -4,9 +4,9 @@ import requests
 import re
 import json
 from utils import LOGGER
+from config import GEMINI_API_KEY
 
 router = APIRouter(prefix="/eng")
-GEMINI_API_KEY = "AIzaSyCWJB43hGDiFKPBi41cBD3nuvp18B4ivf4"
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 DICTIONARY_API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en/"
 
