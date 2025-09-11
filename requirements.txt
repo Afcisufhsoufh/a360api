@@ -9,7 +9,7 @@ asyncio
 pytz
 zstandard
 smartfaker
-smartbindb
+smartbindb==4.12.8
 googletrans==4.0.0-rc1
 beautifulsoup4
 cloudscraper
