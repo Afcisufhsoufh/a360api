@@ -1,3 +1,5 @@
+# Copyright @ISmartCoder
+# Updates Channel @TheSmartDev 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from smartbindb import SmartBinDB
@@ -11,11 +13,11 @@ async def get_bin_info(country: str = None, bank: str = None, num: str = None, a
     try:
         if num:
             result = await smartdb.get_bin_info(num)
-            if not result:
+            if result.get("status") == "error":
                 return JSONResponse(
                     status_code=404,
                     content={
-                        "error": "No information found for the provided BIN",
+                        "error": result.get("message", "No information found for the provided BIN"),
                         "api_owner": "@ISmartCoder",
                         "api_updates": "t.me/TheSmartDev"
                     }
@@ -28,38 +30,38 @@ async def get_bin_info(country: str = None, bank: str = None, num: str = None, a
             country_code = country.upper()
             if country_code == "UK":
                 country_code = "GB"
-            results = await smartdb.get_bins_by_country(country_code, amount)
-            if not results:
+            result = await smartdb.get_bins_by_country(country_code, amount)
+            if result.get("status") == "error":
                 return JSONResponse(
                     status_code=404,
                     content={
-                        "error": f"No BINs found for country code {country_code}",
+                        "error": result.get("message", f"No BINs found for country code {country_code}"),
                         "api_owner": "@ISmartCoder",
                         "api_updates": "t.me/TheSmartDev"
                     }
                 )
             response = {
-                "results": results,
-                "total_results": len(results),
+                "results": result["data"],
+                "total_results": result["count"],
                 "api_owner": "@ISmartCoder",
                 "api_updates": "t.me/TheSmartDev"
             }
             return JSONResponse(content=response)
         
         elif bank:
-            results = await smartdb.get_bins_by_bank(bank, amount)
-            if not results:
+            result = await smartdb.get_bins_by_bank(bank, amount)
+            if result.get("status") == "error":
                 return JSONResponse(
                     status_code=404,
                     content={
-                        "error": f"No BINs found for bank {bank}",
+                        "error": result.get("message", f"No BINs found for bank {bank}"),
                         "api_owner": "@ISmartCoder",
                         "api_updates": "t.me/TheSmartDev"
                     }
                 )
             response = {
-                "results": results,
-                "total_results": len(results),
+                "results": result["data"],
+                "total_results": result["count"],
                 "api_owner": "@ISmartCoder",
                 "api_updates": "t.me/TheSmartDev"
             }
