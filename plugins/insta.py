@@ -1,19 +1,47 @@
-# Copyright @ISmartCoder
-# Updates Channel: https://t.me/TheSmartDev
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 import requests
-from urllib.parse import urlparse, parse_qs, unquote
-from utils import LOGGER
+from bs4 import BeautifulSoup
 
 router = APIRouter(prefix="/insta")
-API_URL = "https://fastdl.live/api/search"
-HEADERS = {"Content-Type": "application/json"}
 
-def extract_filename(download_url, index):
-    parsed = urlparse(download_url)
-    query = parse_qs(parsed.query)
-    return unquote(query.get('filename', [f"media_{index}"])[0])
+API_URL = "https://instsaves.pro/wp-json/visolix/api/download"
+HEADERS = {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}
+
+def fetch_html(insta_url: str):
+    payload = {"url": insta_url, "format": "", "captcha_response": None}
+    response = requests.post(API_URL, json=payload, headers=HEADERS)
+    response.raise_for_status()
+    json_data = response.json()
+    if not json_data.get("status") or not json_data.get("data"):
+        return None
+    return json_data["data"]
+
+def parse_media(html_content: str):
+    soup = BeautifulSoup(html_content, "html.parser")
+    media_boxes = soup.select(".visolix-media-box")
+    results = []
+    image_count = 1
+    video_count = 1
+    for box in media_boxes:
+        img_tag = box.find("img", recursive=False)
+        preview_img = img_tag["src"] if img_tag else None
+        download_tag = box.find("a", class_="visolix-download-media", href=True)
+        download_url = download_tag["href"] if download_tag else None
+        download_text = download_tag.text.lower() if download_tag else ""
+        if "video" in download_text:
+            label = f"video{video_count}"
+            video_count += 1
+        elif "image" in download_text:
+            label = f"image{image_count}"
+            image_count += 1
+        elif "story" in download_text:
+            label = f"story_video{video_count}"
+            video_count += 1
+        else:
+            label = "thumbnail"
+        results.append({"label": label, "thumbnail": preview_img, "download": download_url})
+    return results
 
 @router.get("/dl")
 async def download(url: str = ""):
@@ -27,39 +55,19 @@ async def download(url: str = ""):
                 "api_updates": "t.me/TheSmartDev"
             }
         )
-    
-    payload = {"url": url}
     try:
-        response = requests.post(API_URL, json=payload, headers=HEADERS)
-        if response.status_code != 200:
-            LOGGER.error(f"API request failed for URL {url}: HTTP {response.status_code}")
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "status": "error",
-                    "error": f"API request failed: HTTP {response.status_code}",
-                    "api_owner": "@ISmartCoder",
-                    "api_updates": "t.me/TheSmartDev"
-                }
-            )
-        
-        data = response.json()
-        if not data.get("success") or not data.get("result"):
-            LOGGER.error(f"No media found or invalid URL: {url}")
+        html = fetch_html(url)
+        if not html:
             return JSONResponse(
                 status_code=404,
                 content={
                     "status": "error",
-                    "error": "No media found or invalid URL",
+                    "error": "Media not found or unsupported",
                     "api_owner": "@ISmartCoder",
                     "api_updates": "t.me/TheSmartDev"
                 }
             )
-        
-        media_list = data['result']
-        for index, item in enumerate(media_list, 1):
-            item['filename'] = extract_filename(item['downloadLink'], index)
-        
+        media_list = parse_media(html)
         return JSONResponse(
             content={
                 "status": "success",
@@ -69,9 +77,7 @@ async def download(url: str = ""):
                 "api_updates": "t.me/TheSmartDev"
             }
         )
-    
     except Exception as e:
-        LOGGER.error(f"Unexpected error for URL {url}: {str(e)}")
         return JSONResponse(
             status_code=500,
             content={
