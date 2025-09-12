@@ -35,6 +35,7 @@ async def get_stripe_key_info(stripe_key: str):
             pending_balance = balance_data.get("pending", [{}])[0].get("amount", 0) / 100 if balance_data else 0
             currency = balance_data.get("available", [{}])[0].get("currency", "N/A").upper() if balance_data else "N/A"
             capabilities = data.get("capabilities", {})
+            pk_live = stripe_key.replace("sk_live_", "pk_live_") if stripe_key.startswith("sk_live_") else "N/A"
             return {
                 "account_info": {
                     "status": "✅ Live" if data.get("charges_enabled") else "❌ Restricted",
@@ -49,6 +50,7 @@ async def get_stripe_key_info(stripe_key: str):
                     "charges_enabled": "✅ Yes" if data.get("charges_enabled") else "❌ No",
                     "payouts_enabled": "✅ Yes" if data.get("payouts_enabled") else "❌ No",
                     "account_type": data.get("type", "N/A").capitalize(),
+                    "pk_live": pk_live
                 },
                 "capabilities": {
                     "card_payments": "✅ Enabled" if capabilities.get("card_payments") == "active" else "❌ Disabled",
