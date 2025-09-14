@@ -4,12 +4,12 @@ telethon
 cryptg
 fastapi
 uvicorn
-brotli
 asyncio
 pytz
-zstandard
 smartfaker
-smartbindb==4.12.8
+brotli
+zstandard
+smartbindb
 googletrans==4.0.0-rc1
 beautifulsoup4
 cloudscraper
