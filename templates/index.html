@@ -402,51 +402,155 @@ header:hover svg path {
           <i class="fas fa-play mr-2"></i> Try It
         </a>
       </div>
-      <!-- /bindb/bin Endpoint -->
-      <div class="endpoint-card">
-        <h3 class="text-2xl font-bold stylish-text mb-4">/bindb/bin</h3>
-        <p class="text-base stylish-text mb-2"><strong>Description:</strong> Retrieves BIN information or searches BINs by country or bank using the SmartBinDB library. Supports single BIN lookup or bulk searches with optional amount.</p>
-        <p class="text-base stylish-text mb-2"><strong>Method:</strong> GET</p>
-        <p class="text-base stylish-text mb-2"><strong>Endpoint:</strong> <code>/bindb/bin?num={bin}&country={code}&bank={bank}&amount={amount}</code></p>
-        <p class="text-base stylish-text mb-2"><strong>Parameters:</strong> (At least one of <code>num</code>, <code>country</code>, or <code>bank</code> is required)</p>
-        <ul class="list-disc list-inside ml-4 text-base stylish-text mb-2">
-          <li><code>num</code> (optional, string): BIN number for single lookup.</li>
-          <li><code>country</code> (optional, string): ISO 3166-1 alpha-2 country code (e.g., "BD").</li>
-          <li><code>bank</code> (optional, string): Bank name (e.g., "Chase").</li>
-          <li><code>amount</code> (optional, integer): Number of BINs to return for country/bank searches (default 1000).</li>
-        </ul>
-        <p class="text-base stylish-text mb-2"><strong>Example Request (Single BIN):</strong></p>
-        <pre class="code-block"><code>curl -X GET "https://web-production-28e2a.up.railway.app/bindb/bin?num=515462"</code></pre>
-        <p class="text-base stylish-text mb-2"><strong>Example Response (Single BIN):</strong></p>
-        <pre class="code-block"><code>
+<!-- /bindb/bin Endpoint -->
+<div class="endpoint-card">
+  <h3 class="text-2xl font-bold stylish-text mb-4">/bindb/bin</h3>
+  <p class="text-base stylish-text mb-2"><strong>Description:</strong> Retrieves BIN information for a single BIN or searches BINs by country or bank using the SmartBinDB library. Supports single BIN lookup or bulk searches with an optional amount parameter. Country-based searches return detailed BIN data including issuer, card type, and brand.</p>
+  <p class="text-base stylish-text mb-2"><strong>Method:</strong> GET</p>
+  <p class="text-base stylish-text mb-2"><strong>Endpoint:</strong> <code>/bindb/bin?num={bin}&country={code}&bank={bank}&amount={amount}</code></p>
+  <p class="text-base stylish-text mb-2"><strong>Parameters:</strong> (At least one of <code>num</code>, <code>country</code>, or <code>bank</code> is required)</p>
+  <ul class="list-disc list-inside ml-4 text-base stylish-text mb-2">
+    <li><code>num</code> (optional, string): BIN number for single lookup (e.g., "515462").</li>
+    <li><code>country</code> (optional, string): ISO 3166-1 alpha-2 country code for BIN search (e.g., "BD" or "UK"). Note: "UK" is automatically converted to "GB".</li>
+    <li><code>bank</code> (optional, string): Bank name for BIN search (e.g., "Chase").</li>
+    <li><code>amount</code> (optional, integer, default=1000): Number of BINs to return for country or bank searches.</li>
+  </ul>
+  <p class="text-base stylish-text mb-2"><strong>Example Request (Single BIN):</strong></p>
+  <pre class="code-block"><code>curl -X GET "https://web-production-28e2a.up.railway.app/bindb/bin?num=515462"</code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Example Response (Single BIN):</strong></p>
+  <pre class="code-block"><code>
 {
   "bin": "515462",
-  "bank": "Chase Bank",
-  "country": "US",
-  "card_type": "Credit",
-  "card_brand": "Mastercard",
+  "brand": "MASTERCARD",
+  "category": "CREDIT",
+  "CardTier": "CREDIT MASTERCARD",
+  "country_code": "US",
+  "Type": "CREDIT",
+  "country_code_alpha3": "USA",
+  "Country": {
+    "A2": "US",
+    "A3": "USA",
+    "N3": "840",
+    "Name": "United States",
+    "Cont": "North America"
+  },
+  "issuer": "Chase Bank",
+  "phone": "+18009359935",
+  "type": "CREDIT",
+  "website": "https://www.chase.com",
   "api_owner": "@ISmartCoder",
   "api_updates": "t.me/TheSmartDev"
 }
-        </code></pre>
-        <p class="text-base stylish-text mb-2"><strong>Example Request (Country Search):</strong></p>
-        <pre class="code-block"><code>curl -X GET "https://web-production-28e2a.up.railway.app/bindb/bin?country=BD&amount=2"</code></pre>
-        <p class="text-base stylish-text mb-2"><strong>Example Response (Country Search):</strong></p>
-        <pre class="code-block"><code>
+  </code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Example Request (Country Search):</strong></p>
+  <pre class="code-block"><code>curl -X GET "https://web-production-28e2a.up.railway.app/bindb/bin?country=BD&amount=2"</code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Example Response (Country Search):</strong></p>
+  <pre class="code-block"><code>
 {
   "results": [
-    {"bin": "412345", "bank": "BRAC Bank", "card_type": "Debit", "card_brand": "Visa"},
-    {"bin": "456789", "bank": "Dutch-Bangla Bank", "card_type": "Credit", "card_brand": "Mastercard"}
+    {
+      "bin": "101017",
+      "brand": "LOCAL BRAND",
+      "category": "PROPRIETARY",
+      "CardTier": "PROPRIETARY LOCAL BRAND",
+      "country_code": "BD",
+      "Type": "DEBIT",
+      "country_code_alpha3": "BGD",
+      "Country": {
+        "A2": "BD",
+        "A3": "BGD",
+        "N3": "050",
+        "Name": "Bangladesh",
+        "Cont": "Asia"
+      },
+      "issuer": "PRIME BANK, LTD.",
+      "phone": "+88029662776",
+      "type": "DEBIT",
+      "website": "https://www.primebank.com.bd"
+    },
+    {
+      "bin": "101018",
+      "brand": "LOCAL BRAND",
+      "category": "PREPAID",
+      "CardTier": "PREPAID LOCAL BRAND",
+      "country_code": "BD",
+      "Type": "DEBIT",
+      "country_code_alpha3": "BGD",
+      "Country": {
+        "A2": "BD",
+        "A3": "BGD",
+        "N3": "050",
+        "Name": "Bangladesh",
+        "Cont": "Asia"
+      },
+      "issuer": "PRIME BANK, LTD.",
+      "phone": "+88029662776",
+      "type": "DEBIT",
+      "website": "https://www.primebank.com.bd"
+    }
   ],
   "total_results": 2,
   "api_owner": "@ISmartCoder",
   "api_updates": "t.me/TheSmartDev"
 }
-        </code></pre>
-        <a href="https://web-production-28e2a.up.railway.app/bindb/bin?num=515462" target="_blank" class="inline-flex items-center btn-glow font-bold py-2 px-4 rounded-xl mt-4 stylish-text">
-          <i class="fas fa-play mr-2"></i> Try It
-        </a>
-      </div>
+  </code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Example Request (Bank Search):</strong></p>
+  <pre class="code-block"><code>curl -X GET "https://web-production-28e2a.up.railway.app/bindb/bin?bank=Chase&amount=2"</code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Example Response (Bank Search):</strong></p>
+  <pre class="code-block"><code>
+{
+  "results": [
+    {
+      "bin": "515462",
+      "brand": "MASTERCARD",
+      "category": "CREDIT",
+      "CardTier": "CREDIT MASTERCARD",
+      "country_code": "US",
+      "Type": "CREDIT",
+      "country_code_alpha3": "USA",
+      "Country": {
+        "A2": "US",
+        "A3": "USA",
+        "N3": "840",
+        "Name": "United States",
+        "Cont": "North America"
+      },
+      "issuer": "Chase Bank",
+      "phone": "+18009359935",
+      "type": "CREDIT",
+      "website": "https://www.chase.com"
+    },
+    {
+      "bin": "527891",
+      "brand": "VISA",
+      "category": "DEBIT",
+      "CardTier": "DEBIT VISA",
+      "country_code": "US",
+      "Type": "DEBIT",
+      "country_code_alpha3": "USA",
+      "Country": {
+        "A2": "US",
+        "A3": "USA",
+        "N3": "840",
+        "Name": "United States",
+        "Cont": "North America"
+      },
+      "issuer": "Chase Bank",
+      "phone": "+18009359935",
+      "type": "DEBIT",
+      "website": "https://www.chase.com"
+    }
+  ],
+  "total_results": 2,
+  "api_owner": "@ISmartCoder",
+  "api_updates": "t.me/TheSmartDev"
+}
+  </code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Note:</strong> The endpoint uses the SmartBinDB library. For country searches, use standard ISO 3166-1 alpha-2 codes (e.g., "BD" for Bangladesh, "US" for United States). "UK" is converted to "GB" internally. The <code>amount</code> parameter limits the number of results for country or bank searches (default 1000). Ensure valid parameters are provided to avoid errors.</p>
+  <a href="https://web-production-28e2a.up.railway.app/docs" target="_blank" class="inline-flex items-center btn-glow font-bold py-2 px-4 rounded-xl mt-4 stylish-text">
+    <i class="fas fa-play mr-2"></i> Try It (via API Docs)
+  </a>
+</div>
       <!-- /pypi Endpoint -->
       <div class="endpoint-card">
         <h3 class="text-2xl font-bold stylish-text mb-4">/pypi</h3>
@@ -1926,41 +2030,101 @@ curl -X POST "https://web-production-28e2a.up.railway.app/ph/enh" \
           <i class="fas fa-play mr-2"></i> Try It
         </a>
       </div>
-	  <!-- /tik/dl Endpoint -->
-      <div class="endpoint-card">
-        <h3 class="text-2xl font-bold stylish-text mb-4">/tik/dl</h3>
-        <p class="text-base stylish-text mb-2"><strong>Description:</strong> Retrieves downloadable links for a TikTok video, filtering for snapcdn.app URLs and providing sanitized filenames. Uses an external API to process the TikTok URL.</p>
-        <p class="text-base stylish-text mb-2"><strong>Method:</strong> GET</p>
-        <p class="text-base stylish-text mb-2"><strong>Endpoint:</strong> <code>/tik/dl?url={url}</code></p>
-        <p class="text-base stylish-text mb-2"><strong>Parameters:</strong></p>
-        <ul class="list-disc list-inside ml-4 text-base stylish-text mb-2">
-          <li><code>url</code> (required, string): TikTok video URL (e.g., "https://www.tiktok.com/@example/video/123456789").</li>
-        </ul>
-        <p class="text-base stylish-text mb-2"><strong>Example Request:</strong></p>
-        <pre class="code-block"><code>curl -X GET "https://web-production-28e2a.up.railway.app/tik/dl?url=https://www.tiktok.com/@example/video/123456789"</code></pre>
-        <p class="text-base stylish-text mb-2"><strong>Example Response:</strong></p>
-        <pre class="code-block"><code>
+<!-- /sp/dl Endpoint -->
+<div class="endpoint-card">
+  <h3 class="text-2xl font-bold stylish-text mb-4">/sp/dl</h3>
+  <p class="text-base stylish-text mb-2"><strong>Description:</strong> Retrieves downloadable links and metadata for a Spotify track using an external API (spotdl.io). Provides track name, artists, album image, duration, explicit status, and download URL.</p>
+  <p class="text-base stylish-text mb-2"><strong>Method:</strong> GET</p>
+  <p class="text-base stylish-text mb-2"><strong>Endpoint:</strong> <code>/sp/dl?url={url}</code></p>
+  <p class="text-base stylish-text mb-2"><strong>Parameters:</strong></p>
+  <ul class="list-disc list-inside ml-4 text-base stylish-text mb-2">
+    <li><code>url</code> (required, string): Spotify track URL (e.g., "https://open.spotify.com/track/3awyoyNZNP1g3X8xa2tMoV").</li>
+  </ul>
+  <p class="text-base stylish-text mb-2"><strong>Example Request:</strong></p>
+  <pre class="code-block"><code>curl -X GET "https://web-production-28e2a.up.railway.app/sp/dl?url=https://open.spotify.com/track/3awyoyNZNP1g3X8xa2tMoV"</code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Example Response:</strong></p>
+  <pre class="code-block"><code>
 {
-  "success": true,
-  "links": [
-    {
-      "url": "https://dl.snapcdn.app/get?token=xyz123...",
-      "filename": "video_123456789.mp4"
-    },
-    {
-      "url": "https://dl.snapcdn.app/get?token=abc456...",
-      "filename": "audio_123456789.mp3"
-    }
-  ],
+  "name": "Tum Hi Ho",
+  "artists": ["Mithoon", "Arijit Singh"],
+  "album_image": "https://i.scdn.co/image/ab67616d0000b2736404721c1943d5069f0805f3",
+  "duration_seconds": 261,
+  "explicit": false,
+  "download_url": "https://dl.spotdl.io/get?token=xyz123...",
   "api_owner": "@ISmartCoder",
   "api_updates": "t.me/TheSmartDev"
 }
-        </code></pre>
-        <p class="text-base stylish-text mb-2"><strong>Note:</strong> The endpoint relies on an external API (tikdownloader.io). Ensure the URL is valid and accessible. Test with a real TikTok video URL for actual results.</p>
-        <a href="https://web-production-28e2a.up.railway.app/docs" target="_blank" class="inline-flex items-center btn-glow font-bold py-2 px-4 rounded-xl mt-4 stylish-text">
-          <i class="fas fa-play mr-2"></i> Try It (via API Docs)
-        </a>
-      </div>
+  </code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Note:</strong> The endpoint relies on an external API (spotdl.io). Ensure the Spotify track URL is valid and accessible. Test with a real Spotify track URL for actual results.</p>
+  <a href="https://web-production-28e2a.up.railway.app/docs" target="_blank" class="inline-flex items-center btn-glow font-bold py-2 px-4 rounded-xl mt-4 stylish-text">
+    <i class="fas fa-play mr-2"></i> Try It (via API Docs)
+  </a>
+</div>
+
+<!-- /sp/search Endpoint -->
+<div class="endpoint-card">
+  <h3 class="text-2xl font-bold stylish-text mb-4">/sp/search</h3>
+  <p class="text-base stylish-text mb-2"><strong>Description:</strong> Searches for Spotify tracks based on a query string, returning a list of tracks with title, artist, duration, ID, track URL, cover art, and release date. Uses the Spotify API for search functionality.</p>
+  <p class="text-base stylish-text mb-2"><strong>Method:</strong> GET</p>
+  <p class="text-base stylish-text mb-2"><strong>Endpoint:</strong> <code>/sp/search?q={query}&limit={limit}&offset={offset}</code></p>
+  <p class="text-base stylish-text mb-2"><strong>Parameters:</strong></p>
+  <ul class="list-disc list-inside ml-4 text-base stylish-text mb-2">
+    <li><code>q</code> (required, string): Search query (e.g., "Tum Hi Ho").</li>
+    <li><code>limit</code> (optional, integer, default=30): Number of tracks to return (max 100).</li>
+    <li><code>offset</code> (optional, integer, default=0): Offset for pagination.</li>
+  </ul>
+  <p class="text-base stylish-text mb-2"><strong>Example Request:</strong></p>
+  <pre class="code-block"><code>curl -X GET "https://web-production-28e2a.up.railway.app/sp/search?q=Tum+Hi+Ho&limit=4&offset=0"</code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Example Response:</strong></p>
+  <pre class="code-block"><code>
+{
+  "api_owner": "@ISmartCoder",
+  "api_updates": "t.me/TheSmartDev",
+  "tracks": [
+    {
+      "Title": "Tum Hi Ho",
+      "Artist": "Mithoon, Arijit Singh",
+      "Duration": "4:21",
+      "Id": 1,
+      "TrackURL": "https://open.spotify.com/track/56zZ48jdyY2oDXHVnwg5Di",
+      "Cover_Art": "https://i.scdn.co/image/ab67616d0000b2736404721c1943d5069f0805f3",
+      "Release Date": "2013-04-06"
+    },
+    {
+      "Title": "Tum Hi Ho Bandhu",
+      "Artist": "Pritam, Neeraj Shridhar, Kavita Seth, Irshad Kamil",
+      "Duration": "4:43",
+      "Id": 2,
+      "TrackURL": "https://open.spotify.com/track/7H3mfOvtPNA8YDF3EdKy0L",
+      "Cover_Art": "https://i.scdn.co/image/ab67616d0000b273ad204486839062991becfbc9",
+      "Release Date": "2012-06-15"
+    },
+    {
+      "Title": "Tamak Pata",
+      "Artist": "Ashes Bangladesh",
+      "Duration": "5:03",
+      "Id": 3,
+      "TrackURL": "https://open.spotify.com/track/1lQOAnYxVJIE0FpYpKrlHe",
+      "Cover_Art": "https://i.scdn.co/image/ab67616d0000b273fef15000440ccac4f40b4e14",
+      "Release Date": "2024-04-21"
+    },
+    {
+      "Title": "Tum Hi Ho",
+      "Artist": "Aruna Arya Gupta, Mohammed Irfan",
+      "Duration": "4:34",
+      "Id": 4,
+      "TrackURL": "https://open.spotify.com/track/3bXAWyNQAFbLzCqLiubBbI",
+      "Cover_Art": "https://i.scdn.co/image/ab67616d0000b27367ec9c4c982bcc9577c89ec6",
+      "Release Date": "2025-05-23"
+    }
+  ]
+}
+  </code></pre>
+  <p class="text-base stylish-text mb-2"><strong>Note:</strong> The endpoint uses the Spotify API for searching tracks. Ensure the query is valid. The limit parameter is capped at 100 due to API restrictions. Test with a real query for actual results.</p>
+  <a href="https://web-production-28e2a.up.railway.app/docs" target="_blank" class="inline-flex items-center btn-glow font-bold py-2 px-4 rounded-xl mt-4 stylish-text">
+    <i class="fas fa-play mr-2"></i> Try It (via API Docs)
+  </a>
+</div>
       <!-- /tr Endpoint -->
       <div class="endpoint-card">
         <h3 class="text-2xl font-bold stylish-text mb-4">/tr</h3>
