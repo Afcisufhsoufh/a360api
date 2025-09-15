@@ -122,12 +122,13 @@ async def get_bin_info(bin: str) -> dict:
     clean_bin = bin.replace('x', '').replace('X', '')[:6]
     try:
         result = await smartdb.get_bin_info(clean_bin)
-        if result.get("status") == "success":
-            bank = result.get("issuer", "Unknown Bank")
-            country_code = result.get("country", {}).get("alpha2", "UN") if isinstance(result.get("country"), dict) else "UN"
+        if result.get("status") == "SUCCESS" and result.get("data"):
+            bin_data = result["data"][0]
+            bank = bin_data.get("issuer", "Unknown Bank")
+            country_code = bin_data.get("country_code", "UN")
             country_name, flag_emoji = get_flag(country_code)
-            scheme = result.get("scheme", "Unknown Scheme")
-            card_type = result.get("type", "Unknown Type")
+            scheme = bin_data.get("brand", "Unknown Scheme")
+            card_type = bin_data.get("type", "Unknown Type")
             bin_info = f"{scheme} - {card_type}"
             return {
                 'Bank': bank,
