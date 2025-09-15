@@ -1,3 +1,5 @@
+#Copyright @ISmartCoder
+#Updates Channel @TheSmartDev 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pyrogram import Client
@@ -63,9 +65,27 @@ def format_user_status(status):
         UserStatus.OFFLINE: "Offline",
         UserStatus.RECENTLY: "Recently online",
         UserStatus.LAST_WEEK: "Last seen within week",
-        UserStatus.LAST_MONTH: "Last seen within month"
+        UserStatus.LAST_MONTH: "Last seen within month",
+        UserStatus.LONG_AGO: "Last seen long ago"
     }
     return status_map.get(status, "Unknown")
+
+def get_profile_photo_url(username, size=320):
+    if username:
+        username = username.strip('@')
+        return f"https://t.me/i/userpic/{size}/{username}.jpg"
+    return None
+
+def format_usernames_list(usernames):
+    if not usernames:
+        return []
+    formatted_usernames = []
+    for username_obj in usernames:
+        if hasattr(username_obj, 'username'):
+            formatted_usernames.append(username_obj.username)
+        else:
+            formatted_usernames.append(str(username_obj))
+    return formatted_usernames
 
 async def ensure_client():
     global client
@@ -134,6 +154,17 @@ async def get_user_info(username):
         elif getattr(user, 'is_fake', False):
             flags = "Fake"
         
+        profile_photo_url = get_profile_photo_url(user.username) if user.username else None
+        
+        last_online_date = None
+        next_offline_date = None
+        if hasattr(user, 'last_online_date') and user.last_online_date:
+            last_online_date = user.last_online_date.strftime("%B %d, %Y at %H:%M:%S")
+        if hasattr(user, 'next_offline_date') and user.next_offline_date:
+            next_offline_date = user.next_offline_date.strftime("%B %d, %Y at %H:%M:%S")
+        
+        usernames_list = format_usernames_list(getattr(user, 'usernames', []))
+        
         user_data = {
             "success": True,
             "type": "bot" if user.is_bot else "user",
@@ -141,15 +172,23 @@ async def get_user_info(username):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "username": user.username,
+            "usernames": usernames_list,
             "dc_id": user.dc_id,
             "dc_location": dc_location,
             "is_premium": premium_status,
             "is_verified": verified_status,
             "is_bot": user.is_bot,
+            "is_scam": getattr(user, 'is_scam', False),
+            "is_fake": getattr(user, 'is_fake', False),
+            "is_frozen": getattr(user, 'is_frozen', False),
+            "frozen_icon": getattr(user, 'frozen_icon', None),
             "flags": flags,
             "status": status,
+            "last_online_date": last_online_date,
+            "next_offline_date": next_offline_date,
             "account_created": account_created_str,
             "account_age": account_age,
+            "profile_photo_url": profile_photo_url,
             "api_owner": "@ISmartCoder",
             "api_updates": "t.me/TheSmartDev",
             "links": {
@@ -180,6 +219,10 @@ async def get_chat_info(username):
         chat_type = chat_type_map.get(chat.type, "unknown")
         dc_location = DC_LOCATIONS.get(getattr(chat, 'dc_id', None), "Unknown")
         
+        profile_photo_url = get_profile_photo_url(chat.username) if chat.username else None
+        
+        usernames_list = format_usernames_list(getattr(chat, 'usernames', []))
+        
         if chat.username:
             join_link = f"t.me/{chat.username}"
             permanent_link = f"t.me/{chat.username}"
@@ -191,16 +234,31 @@ async def get_chat_info(username):
             join_link = f"tg://resolve?domain={chat.id}"
             permanent_link = f"tg://resolve?domain={chat.id}"
         
+        flags = "Clean"
+        if getattr(chat, 'is_scam', False):
+            flags = "Scam"
+        elif getattr(chat, 'is_fake', False):
+            flags = "Fake"
+        
         chat_data = {
             "success": True,
             "type": chat_type,
             "id": chat.id,
             "title": chat.title,
             "username": chat.username,
+            "usernames": usernames_list,
             "dc_id": getattr(chat, 'dc_id', None),
             "dc_location": dc_location,
             "members_count": getattr(chat, 'members_count', None),
             "description": getattr(chat, 'description', None),
+            "is_verified": getattr(chat, 'is_verified', False),
+            "is_restricted": getattr(chat, 'is_restricted', False),
+            "is_scam": getattr(chat, 'is_scam', False),
+            "is_fake": getattr(chat, 'is_fake', False),
+            "is_frozen": getattr(chat, 'is_frozen', False),
+            "frozen_icon": getattr(chat, 'frozen_icon', None),
+            "flags": flags,
+            "profile_photo_url": profile_photo_url,
             "api_owner": "@ISmartCoder",
             "api_updates": "t.me/TheSmartDev",
             "links": {
@@ -230,7 +288,7 @@ async def get_telegram_info(username):
     return {"success": False, "error": "Entity not found in Telegram database", "api_owner": "@ISmartCoder", "api_updates": "t.me/TheSmartDev"}
 
 @router.get("/info")
-async def info_endpoint(username: str = ""):
+async def info_endpoint(username: str = "", size: int = 320):
     if not username:
         return JSONResponse(
             status_code=400,
@@ -243,6 +301,11 @@ async def info_endpoint(username: str = ""):
         )
     try:
         result = await get_telegram_info(username)
+        if result["success"] and "profile_photo_url" in result and result["profile_photo_url"]:
+            result["profile_photo_url"] = get_profile_photo_url(
+                result.get("username"), size
+            ) if result.get("username") else None
+        
         return JSONResponse(
             content=result,
             status_code=200 if result["success"] else 404
