@@ -1,14 +1,15 @@
-#Copyright @ISmartCoder
-#Updates Channel @TheSmartDev 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import re
 import random
-import requests
 import pycountry
 from typing import Optional
+from smartbindb import SmartBinDB
+from utils import LOGGER
 
 router = APIRouter(prefix="/ccgen")
+smartdb = SmartBinDB()
 
 class CardParams(BaseModel):
     bin: str
@@ -117,33 +118,30 @@ def get_flag(country_code: str) -> tuple:
     except Exception:
         return "Unknown Country", "🇺🇳"
 
-def get_bin_info(bin: str) -> dict:
+async def get_bin_info(bin: str) -> dict:
     clean_bin = bin.replace('x', '').replace('X', '')[:6]
     try:
-        response = requests.get(
-            f'https://data.handyapi.com/bin/{clean_bin}',
-            headers={'x-api-key': 'HAS-0YSb780tq6PMVx7s6jmpQU'}
-        )
-        if response.status_code == 200:
-            data = response.json()
-            if data.get('Status') == 'SUCCESS':
-                bank = data.get('Issuer', 'Unknown Bank')
-                country_code = data.get('Country', {}).get('A2', 'UN')
-                country_name, flag_emoji = get_flag(country_code)
-                scheme = data.get('Scheme', 'Unknown Scheme')
-                card_type = data.get('Type', 'Unknown Type')
-                bin_info = f"{scheme} - {card_type}"
-                return {
-                    'Bank': bank,
-                    'Country': f"{country_name} {flag_emoji}",
-                    'BIN Info': bin_info
-                }
-        return {
-            'Bank': 'Unknown Bank',
-            'Country': 'Unknown Country 🇺🇳',
-            'BIN Info': 'Unknown Scheme - Unknown Type'
-        }
-    except requests.RequestException:
+        result = await smartdb.get_bin_info(clean_bin)
+        if result.get("status") == "success":
+            bank = result.get("issuer", "Unknown Bank")
+            country_code = result.get("country", {}).get("alpha2", "UN") if isinstance(result.get("country"), dict) else "UN"
+            country_name, flag_emoji = get_flag(country_code)
+            scheme = result.get("scheme", "Unknown Scheme")
+            card_type = result.get("type", "Unknown Type")
+            bin_info = f"{scheme} - {card_type}"
+            return {
+                'Bank': bank,
+                'Country': f"{country_name} {flag_emoji}",
+                'BIN Info': bin_info
+            }
+        else:
+            return {
+                'Bank': 'Unknown Bank',
+                'Country': 'Unknown Country 🇺🇳',
+                'BIN Info': 'Unknown Scheme - Unknown Type'
+            }
+    except Exception as e:
+        LOGGER.error(f"Error getting BIN info: {str(e)}")
         return {
             'Bank': 'Unknown Bank',
             'Country': 'Unknown Country 🇺🇳',
@@ -158,7 +156,7 @@ def parse_input(user_input: str, amount: int = 10) -> tuple:
     parsed_amount = amount
     if not user_input:
         return None, None, None, None, None
-    digits_x_pattern = r'(?:[0-9xX][a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:\'",.<>/?\\|]*)+(?:[|:/][\d]{2}|xx|xxx|xxxx]+(?:[|:/][\d]{2,4}|xx|xxx|xxxx]+(?:[|:/][\d]{3,4}|xxx|xxxx|rnd]+)?)?)?'
+    digits_x_pattern = r'(?:[0-9xX][a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:\'",.<>/?\\|]*)+(?:[|:/][\d]{2}|xx|xxx|xxxx]+(?:[|:/][\d]{2,4}|xx|xxx|xxxx]+(?:[|:/][\d]{3,4}|xxx|xxxx|rnd]+)?)?'
     matches = re.findall(digits_x_pattern, user_input, re.IGNORECASE)
     if matches:
         for match in matches:
@@ -214,61 +212,100 @@ def parse_input(user_input: str, amount: int = 10) -> tuple:
 @router.get("")
 async def generate_cards(bin: str, month: Optional[str] = None, year: Optional[str] = None, cvv: Optional[str] = None, amount: Optional[int] = 10):
     CC_GEN_LIMIT = 2000
-    if not bin:
-        raise HTTPException(status_code=400, detail={
-            "status": "error",
-            "message": "BIN parameter is required",
+    try:
+        if not bin:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "BIN parameter is required",
+                    "api_owner": "@ISmartCoder",
+                    "api_updates": "t.me/abirxdhackz"
+                }
+            )
+        if amount < 1 or amount > CC_GEN_LIMIT:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": f"Invalid amount: Must be between 1 and {CC_GEN_LIMIT}",
+                    "api_owner": "@ISmartCoder",
+                    "api_updates": "t.me/abirxdhackz"
+                }
+            )
+        user_input = bin
+        if month:
+            user_input += f"|{month}"
+        if year:
+            user_input += f"|{year}"
+        if cvv:
+            user_input += f"|{cvv}"
+        bin, month, year, cvv, parsed_amount = parse_input(user_input, amount)
+        if not bin:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "Invalid BIN: Must be 6-15 digits or up to 16 digits with 'x'",
+                    "api_owner": "@ISmartCoder",
+                    "api_updates": "t.me/abirxdhackz"
+                }
+            )
+        if cvv is not None:
+            is_amex = is_amex_bin(bin)
+            if is_amex and len(cvv) != 4:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "status": "error",
+                        "message": "Invalid CVV format: CVV must be 4 digits for AMEX",
+                        "api_owner": "@ISmartCoder",
+                        "api_updates": "t.me/abirxdhackz"
+                    }
+                )
+            elif not is_amex and len(cvv) != 3:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "status": "error",
+                        "message": "Invalid CVV format: CVV must be 3 digits for non-AMEX",
+                        "api_owner": "@ISmartCoder",
+                        "api_updates": "t.me/abirxdhackz"
+                    }
+                )
+        cards = generate_credit_card(bin, parsed_amount, month, year, cvv)
+        bin_info = await get_bin_info(bin)
+        response = {
+            "status": "success",
+            "bin": bin,
+            "amount": parsed_amount,
+            "cards": cards,
+            "Bank": bin_info['Bank'],
+            "Country": bin_info['Country'],
+            "BIN Info": bin_info['BIN Info'],
             "api_owner": "@ISmartCoder",
             "api_updates": "t.me/abirxdhackz"
-        })
-    if amount < 1 or amount > CC_GEN_LIMIT:
-        raise HTTPException(status_code=400, detail={
-            "status": "error",
-            "message": f"Invalid amount: Must be between 1 and {CC_GEN_LIMIT}",
-            "api_owner": "@ISmartCoder",
-            "api_updates": "t.me/abirxdhackz"
-        })
-    user_input = bin
-    if month:
-        user_input += f"|{month}"
-    if year:
-        user_input += f"|{year}"
-    if cvv:
-        user_input += f"|{cvv}"
-    bin, month, year, cvv, parsed_amount = parse_input(user_input, amount)
-    if not bin:
-        raise HTTPException(status_code=400, detail={
-            "status": "error",
-            "message": "Invalid BIN: Must be 6-15 digits or up to 16 digits with 'x'",
-            "api_owner": "@ISmartCoder",
-            "api_updates": "t.me/abirxdhackz"
-        })
-    if cvv is not None:
-        is_amex = is_amex_bin(bin)
-        if is_amex and len(cvv) != 4:
-            raise HTTPException(status_code=400, detail={
+        }
+        return JSONResponse(content=response)
+    except ValueError as e:
+        LOGGER.error(f"Invalid input for CC generation: {str(e)}")
+        return JSONResponse(
+            status_code=400,
+            content={
                 "status": "error",
-                "message": "Invalid CVV format: CVV must be 4 digits for AMEX",
+                "message": str(e),
                 "api_owner": "@ISmartCoder",
                 "api_updates": "t.me/abirxdhackz"
-            })
-        elif not is_amex and len(cvv) != 3:
-            raise HTTPException(status_code=400, detail={
+            }
+        )
+    except Exception as e:
+        LOGGER.error(f"Error processing CC generation request: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
                 "status": "error",
-                "message": "Invalid CVV format: CVV must be 3 digits for non-AMEX",
+                "message": str(e),
                 "api_owner": "@ISmartCoder",
                 "api_updates": "t.me/abirxdhackz"
-            })
-    cards = generate_credit_card(bin, parsed_amount, month, year, cvv)
-    bin_info = get_bin_info(bin)
-    return {
-        "status": "success",
-        "bin": bin,
-        "amount": parsed_amount,
-        "cards": cards,
-        "Bank": bin_info['Bank'],
-        "Country": bin_info['Country'],
-        "BIN Info": bin_info['BIN Info'],
-        "api_owner": "@ISmartCoder",
-        "api_updates": "t.me/abirxdhackz"
-    }
+            }
+        )
