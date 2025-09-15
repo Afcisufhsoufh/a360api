@@ -156,23 +156,24 @@ def parse_input(user_input: str, amount: int = 10) -> tuple:
     parsed_amount = amount
     if not user_input:
         return None, None, None, None, None
-    digits_x_pattern = r'(?:[0-9xX][a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:\'",.<>/?\\|]*)+(?:[|:/][\d]{2}|xx|xxx|xxxx]+(?:[|:/][\d]{2,4}|xx|xxx|xxxx]+(?:[|:/][\d]{3,4}|xxx|xxxx|rnd]+)?)?'
+    digits_x_pattern = r'([0-9xX]+)(?:[|:/]([0-9]{2}|xx)?)?(?:[|:/]([0-9]{2,4}|xx|xxxx)?)?(?:[|:/]([0-9]{3,4}|xxx|xxxx|rnd)?)?'
     matches = re.findall(digits_x_pattern, user_input, re.IGNORECASE)
     if matches:
         for match in matches:
-            parts = re.split(r'[|:/]', match)
-            bin_part = ''.join(filter(lambda x: x.isdigit() or x in 'xX', parts[0]))
+            bin_part = ''.join(filter(lambda x: x.isdigit() or x in 'xX', match[0]))
             digits_only = re.sub(r'[^0-9]', '', bin_part)
             if 6 <= len(digits_only) <= 16:
-                if len(parts) > 1:
-                    full_match = bin_part + '|' + '|'.join(parts[1:])
-                    bin = full_match
-                else:
-                    bin = digits_only
+                bin = bin_part
+                if len(match) > 1 and match[1]:
+                    month = match[1]
+                if len(match) > 2 and match[2]:
+                    year = match[2]
+                if len(match) > 3 and match[3]:
+                    cvv = match[3]
                 break
     if not bin:
         return None, None, None, None, None
-    parts = re.split(r'[|:/]', bin)
+    parts = re.split(r'[|:/]', user_input)
     bin_part = parts[0] if parts else ""
     digits_only = re.sub(r'[^0-9xX]', '', bin_part)
     if digits_only:
