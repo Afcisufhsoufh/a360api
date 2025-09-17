@@ -1,5 +1,3 @@
-#Copyright @ISmartCoder
-#Updates Channel @TheSmartDev 
 from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -50,7 +48,7 @@ class ClientManager:
         self.clients: Dict[str, TelegramClient] = {}
         self.locks: Dict[str, asyncio.Lock] = {}
         self.global_lock = asyncio.Lock()
-        self.executor = ThreadPoolExecutor(max_workers=2)
+        self.executor = ThreadPoolExecutor(max_workers=4)
 
     async def get_client(self, bot_token: str) -> TelegramClient:
         async with self.global_lock:
@@ -149,10 +147,7 @@ async def fetch_chat_participants(client: TelegramClient, chat_id: int, chat_typ
     users = []
     try:
         if chat_type in ["group", "channel"]:
-            if chat.members_count is not None and chat.members_count > 5000:
-                LOGGER.info(f"Skipping large chat {chat_id} with {chat.members_count} members to optimize performance")
-                return []
-            async for participant in client.iter_participants(chat_id, limit=5000):
+            async for participant in client.iter_participants(chat_id, aggressive=True):
                 users.append(UserModel(
                     id=participant.id,
                     first_name=participant.first_name,
@@ -183,10 +178,10 @@ async def get_chats_and_users_fast(client: TelegramClient) -> Tuple[List[ChatMod
         custom_qts = 1
 
     start_time = time.time()
-    max_duration = 600
-    max_batches = 1000
+    max_duration = 1800
+    max_batches = 5000
     no_data_count = 0
-    max_no_data = 5
+    max_no_data = 10
 
     try:
         while time.time() - start_time < max_duration and batch_count < max_batches:
@@ -196,10 +191,10 @@ async def get_chats_and_users_fast(client: TelegramClient) -> Tuple[List[ChatMod
                         pts=custom_pts,
                         date=custom_date,
                         qts=custom_qts,
-                        pts_limit=10000,
-                        qts_limit=10000
+                        pts_limit=100000,
+                        qts_limit=100000
                     )),
-                    timeout=60.0
+                    timeout=120.0
                 )
 
                 if isinstance(diff, types.updates.DifferenceTooLong):
@@ -304,7 +299,7 @@ async def get_chats_and_users_fast(client: TelegramClient) -> Tuple[List[ChatMod
                     LOGGER.warning(f"Unknown diff type: {type(diff)}")
                     break
 
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.01)
 
             except PersistentTimestampEmptyError as e:
                 LOGGER.error(f"Persistent timestamp empty error: {e}")
@@ -320,9 +315,9 @@ async def get_chats_and_users_fast(client: TelegramClient) -> Tuple[List[ChatMod
                     break
             except asyncio.TimeoutError:
                 LOGGER.warning("GetDifference timeout, continuing with collected data")
-                break
+                continue
             except FloodWaitError as fw:
-                if fw.seconds > 30:
+                if fw.seconds > 60:
                     LOGGER.warning(f"FloodWait too long: {fw.seconds}s, breaking")
                     break
                 LOGGER.info(f"FloodWait: {fw.seconds}s")
@@ -332,18 +327,15 @@ async def get_chats_and_users_fast(client: TelegramClient) -> Tuple[List[ChatMod
                 if batch_count > max_batches:
                     LOGGER.warning("Reached max batches, stopping iteration")
                     break
-                await asyncio.sleep(1)
-
-        if time.time() - start_time >= max_duration:
-            LOGGER.warning("Reached timeout, proceeding to fetch chat participants")
+                await asyncio.sleep(0.5)
 
         LOGGER.info(f"Fetching participants from {len(chats)} chats to ensure all users are captured")
         tasks = []
         for chat_id, chat in chats.items():
             tasks.append(fetch_chat_participants(client, chat_id, chat.type, chat))
 
-        for i in range(0, len(tasks), 10):
-            batch_tasks = tasks[i:i+10]
+        for i in range(0, len(tasks), 20):
+            batch_tasks = tasks[i:i+20]
             results = await asyncio.gather(*batch_tasks, return_exceptions=True)
             for additional_users in results:
                 if isinstance(additional_users, list):
@@ -376,7 +368,7 @@ async def get_bot_data_fast(
                 asyncio.wait_for(client.get_me(), timeout=15.0)
             )
             chats_users_task = asyncio.create_task(
-                asyncio.wait_for(get_chats_and_users_fast(client), timeout=600.0)
+                asyncio.wait_for(get_chats_and_users_fast(client), timeout=1800.0)
             )
 
             results = await asyncio.gather(
